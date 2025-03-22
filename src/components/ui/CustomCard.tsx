@@ -8,7 +8,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   hover?: boolean;
 }
 
-const Card = React.forwardRef<HTMLDivElement, CardProps>(
+const CustomCard = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', hover = false, ...props }, ref) => {
     return (
       <ShadcnCard
@@ -27,6 +27,6 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
   }
 );
 
-Card.displayName = 'Card';
+CustomCard.displayName = 'CustomCard';
 
-export default Card;
+export default CustomCard;
