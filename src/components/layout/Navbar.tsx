@@ -15,7 +15,7 @@ import {
 import { Menu, X, User } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, profile, isAuthenticated, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -99,15 +99,15 @@ const Navbar = () => {
                 <DropdownMenuTrigger className="focus:outline-none">
                   <Avatar className="h-8 w-8 transition-transform hover:scale-105">
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {user?.name ? getInitials(user.name) : 'U'}
+                      {profile?.name ? getInitials(profile.name) : 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user?.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                      <p className="text-sm font-medium leading-none">{profile?.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{profile?.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -183,12 +183,12 @@ const Navbar = () => {
                 <div className="flex items-center space-x-2 py-2">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {user?.name ? getInitials(user.name) : 'U'}
+                      {profile?.name ? getInitials(profile.name) : 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm font-medium leading-none">{profile?.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{profile?.email}</p>
                   </div>
                 </div>
                 <Link 

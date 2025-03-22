@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { User, Key, CreditCard, Bell, ShieldCheck } from 'lucide-react';
 
 const Account = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { profile, isAuthenticated, isLoading } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   
   // If loading, show a loading indicator
@@ -86,11 +86,11 @@ const Account = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
-                    <Input id="name" defaultValue={user?.name} />
+                    <Input id="name" defaultValue={profile?.name || ''} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue={user?.email} />
+                    <Input id="email" type="email" defaultValue={profile?.email || ''} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bio">Bio</Label>
@@ -133,12 +133,12 @@ const Account = () => {
                       <div className="space-y-0.5">
                         <p>Protect your account with 2FA</p>
                         <p className="text-sm text-muted-foreground">
-                          {user?.plan === 'free' 
+                          {profile?.plan === 'free' 
                             ? 'Available on premium plans' 
                             : 'Add an extra layer of security'}
                         </p>
                       </div>
-                      <Switch disabled={user?.plan === 'free'} />
+                      <Switch disabled={profile?.plan === 'free'} />
                     </div>
                   </div>
                 </CardContent>
@@ -165,10 +165,10 @@ const Account = () => {
                         <div>
                           <p className="font-medium">Current Plan</p>
                           <p className="text-sm text-muted-foreground">
-                            {user?.plan === 'free' ? 'Free Tier' : 'Premium Tier'}
+                            {profile?.plan === 'free' ? 'Free Tier' : 'Premium Tier'}
                           </p>
                         </div>
-                        {user?.plan === 'free' ? (
+                        {profile?.plan === 'free' ? (
                           <Button>Upgrade</Button>
                         ) : (
                           <Button variant="outline">Manage</Button>
@@ -180,32 +180,32 @@ const Account = () => {
                         <div className="flex justify-between">
                           <span className="text-sm">Plan</span>
                           <span className="text-sm font-medium">
-                            {user?.plan === 'free' ? 'Free' : 'Premium'}
+                            {profile?.plan === 'free' ? 'Free' : 'Premium'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">API Requests</span>
                           <span className="text-sm font-medium">
-                            {user?.plan === 'free' ? '100 / month' : 'Unlimited'}
+                            {profile?.plan === 'free' ? '100 / month' : 'Unlimited'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">Rate Limiting</span>
                           <span className="text-sm font-medium">
-                            {user?.plan === 'free' ? 'Yes' : 'No'}
+                            {profile?.plan === 'free' ? 'Yes' : 'No'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">Two-factor Authentication</span>
                           <span className="text-sm font-medium">
-                            {user?.plan === 'free' ? 'No' : 'Yes'}
+                            {profile?.plan === 'free' ? 'No' : 'Yes'}
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  {user?.plan !== 'free' && (
+                  {profile?.plan !== 'free' && (
                     <div>
                       <h3 className="text-lg font-medium mb-4">Payment Method</h3>
                       <div className="border rounded-lg p-4 flex justify-between items-center">
@@ -327,13 +327,13 @@ const Account = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Rate Limit</span>
                       <span className="text-sm font-medium">
-                        {user?.plan === 'free' ? '100 requests/month' : 'Unlimited'}
+                        {profile?.plan === 'free' ? '100 requests/month' : 'Unlimited'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Current Usage</span>
                       <span className="text-sm font-medium">
-                        {user?.apiRequests.used} requests
+                        {profile?.apiRequests.used} requests
                       </span>
                     </div>
                     <div className="flex justify-between items-center">

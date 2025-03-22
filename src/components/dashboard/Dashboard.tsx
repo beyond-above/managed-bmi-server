@@ -26,11 +26,11 @@ const mockBmiData: BmiHistoryData[] = [
 ];
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   
   // Calculate the percentage of API requests used
-  const apiRequestsPercentage = user ? Math.floor((user.apiRequests.used / user.apiRequests.limit) * 100) : 0;
+  const apiRequestsPercentage = profile ? Math.floor((profile.apiRequests.used / profile.apiRequests.limit) * 100) : 0;
   
   return (
     <div className="space-y-8 w-full max-w-6xl mx-auto page-transition">
@@ -130,16 +130,16 @@ const Dashboard = () => {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium">
-                      {user?.apiRequests.used} / {user?.apiRequests.limit} requests
+                      {profile?.apiRequests.used} / {profile?.apiRequests.limit} requests
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      {user?.plan === 'free' ? 'Free Plan' : 'Premium Plan'}
+                      {profile?.plan === 'free' ? 'Free Plan' : 'Premium Plan'}
                     </span>
                   </div>
                   <Progress value={apiRequestsPercentage} className="h-2" />
                 </div>
                 
-                {user?.plan === 'free' && (
+                {profile?.plan === 'free' && (
                   <div className="bg-secondary/50 rounded-lg p-4">
                     <p className="text-sm mb-2">
                       Upgrade to Premium for unlimited API requests and advanced features.
@@ -152,7 +152,7 @@ const Dashboard = () => {
                   <div className="p-3 flex justify-between">
                     <span className="text-sm">Rate Limiting</span>
                     <span className="text-sm font-medium">
-                      {user?.plan === 'free' ? 'Yes' : 'No'}
+                      {profile?.plan === 'free' ? 'Yes' : 'No'}
                     </span>
                   </div>
                   <div className="p-3 flex justify-between">

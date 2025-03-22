@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: data.id,
         email: data.email,
         name: data.name,
-        plan: data.plan,
+        plan: data.plan as 'free' | 'premium',
         apiRequests: {
           limit: apiLimit,
           used: apiData?.length || 0

@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 
 const Pricing = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
   
   const plans = [
     {
@@ -30,8 +30,8 @@ const Pricing = () => {
         'No priority support',
         'No custom branding'
       ],
-      cta: isAuthenticated && user?.plan === 'free' ? 'Current Plan' : 'Get Started',
-      ctaVariant: isAuthenticated && user?.plan === 'free' ? 'outline' : 'default',
+      cta: isAuthenticated && profile?.plan === 'free' ? 'Current Plan' : 'Get Started',
+      ctaVariant: isAuthenticated && profile?.plan === 'free' ? 'outline' : 'default',
       popular: false
     },
     {
@@ -50,8 +50,8 @@ const Pricing = () => {
         'Two-factor authentication'
       ],
       limitations: [],
-      cta: isAuthenticated && user?.plan === 'premium' ? 'Current Plan' : 'Upgrade Now',
-      ctaVariant: isAuthenticated && user?.plan === 'premium' ? 'outline' : 'default',
+      cta: isAuthenticated && profile?.plan === 'premium' ? 'Current Plan' : 'Upgrade Now',
+      ctaVariant: isAuthenticated && profile?.plan === 'premium' ? 'outline' : 'default',
       popular: true
     }
   ];
@@ -59,7 +59,7 @@ const Pricing = () => {
   const handlePlanSelection = (plan: string) => {
     if (!isAuthenticated) {
       navigate('/register');
-    } else if (plan === 'Premium' && user?.plan === 'free') {
+    } else if (plan === 'Premium' && profile?.plan === 'free') {
       // Handle upgrade
       console.log('Upgrade to premium');
     }
@@ -130,7 +130,7 @@ const Pricing = () => {
                     className="w-full" 
                     variant={plan.ctaVariant as any}
                     onClick={() => handlePlanSelection(plan.name)}
-                    disabled={isAuthenticated && user?.plan === plan.name.toLowerCase()}
+                    disabled={isAuthenticated && profile?.plan === plan.name.toLowerCase()}
                   >
                     {plan.cta}
                   </Button>
