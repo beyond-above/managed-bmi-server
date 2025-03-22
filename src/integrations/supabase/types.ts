@@ -9,7 +9,123 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      api_requests: {
+        Row: {
+          created_at: string
+          id: string
+          request_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bmi_records: {
+        Row: {
+          bmi: number
+          created_at: string
+          height: number
+          id: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          bmi: number
+          created_at?: string
+          height: number
+          id?: string
+          user_id: string
+          weight: number
+        }
+        Update: {
+          bmi?: number
+          created_at?: string
+          height?: number
+          id?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number | null
+          created_at: string
+          currency: string | null
+          id: string
+          plan: string
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_payment_id: string | null
+          stripe_subscription_id: string | null
+          user_id: string
+          valid_until: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          plan: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_id?: string | null
+          stripe_subscription_id?: string | null
+          user_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          plan?: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_id?: string | null
+          stripe_subscription_id?: string | null
+          user_id?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          plan: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          name?: string | null
+          plan?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          plan?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
+import { Separator } from '@/components/ui/separator';
+import { FcGoogle } from 'react-icons/fc';
+import { LoaderCircle } from 'lucide-react';
 
 interface AuthFormProps {
   type: 'login' | 'register';
@@ -13,12 +16,13 @@ interface AuthFormProps {
 
 const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const navigate = useNavigate();
-  const { login, register, isLoading } = useAuth();
+  const { login, register, signInWithGoogle, isLoading } = useAuth();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [socialLoading, setSocialLoading] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +38,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setSocialLoading(true);
+      await signInWithGoogle();
+      // No navigation needed as it will redirect to Google
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred with Google sign in');
+      setSocialLoading(false);
     }
   };
   
@@ -100,19 +115,45 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           {error && (
             <div className="text-sm text-destructive">{error}</div>
           )}
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <Separator />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading || socialLoading}
+          >
+            {socialLoading ? (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FcGoogle className="mr-2 h-4 w-4" />
+            )}
+            Google
+          </Button>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button 
             type="submit" 
             className="w-full" 
-            disabled={isLoading}
+            disabled={isLoading || socialLoading}
           >
-            {isLoading 
-              ? 'Loading...' 
-              : type === 'login' 
-                ? 'Sign in' 
-                : 'Create account'
-            }
+            {isLoading ? (
+              <>
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : type === 'login' ? 'Sign in' : 'Create account'}
           </Button>
           <div className="text-sm text-center text-muted-foreground">
             {type === 'login' 
