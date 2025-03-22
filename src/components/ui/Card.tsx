@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Card as ShadcnCard, CardProps as ShadcnCardProps } from '@/components/ui/card';
+import { Card as ShadcnCard } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-interface CardProps extends ShadcnCardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'glass' | 'outline';
   hover?: boolean;
 }
