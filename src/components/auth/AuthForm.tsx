@@ -22,11 +22,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [formLoading, setFormLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFormLoading(true);
     
     try {
       if (type === 'login') {
@@ -38,6 +40,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -132,7 +136,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             variant="outline" 
             className="w-full"
             onClick={handleGoogleSignIn}
-            disabled={isLoading || socialLoading}
+            disabled={formLoading || socialLoading}
           >
             {socialLoading ? (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
@@ -146,9 +150,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           <Button 
             type="submit" 
             className="w-full" 
-            disabled={isLoading || socialLoading}
+            disabled={formLoading || socialLoading}
           >
-            {isLoading ? (
+            {formLoading ? (
               <>
                 <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                 Loading...

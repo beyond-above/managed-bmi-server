@@ -70,12 +70,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Set limits based on plan
       const apiLimit = data.plan === 'premium' ? 25 : 10;
+      
+      // Make sure we cast plan to the correct type
+      const userPlan = (data.plan === 'premium' ? 'premium' : 'free') as 'free' | 'premium';
 
       return {
         id: data.id,
         email: data.email,
         name: data.name,
-        plan: data.plan as 'free' | 'premium',
+        plan: userPlan,
         apiRequests: {
           limit: apiLimit,
           used: apiData?.length || 0
@@ -98,42 +101,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize auth state
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
-        } else {
-          setProfile(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-
-    // Then check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const initializeAuth = async () => {
+      setIsLoading(true);
       
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
+      // Set up auth state listener first
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('Auth state changed:', event, !!session);
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            const profileData = await fetchProfile(session.user.id);
+            setProfile(profileData);
+          } else {
+            setProfile(null);
+          }
+          
+          setIsLoading(false);
+        }
+      );
+
+      // Then check for existing session
+      const { data } = await supabase.auth.getSession();
+      const existingSession = data.session;
+      
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
+      
+      if (existingSession?.user) {
+        const profileData = await fetchProfile(existingSession.user.id);
         setProfile(profileData);
       }
       
       setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+      
+      return () => subscription.unsubscribe();
+    };
+    
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -158,8 +169,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (name: string, email: string, password: string) => {
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -190,6 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -203,11 +215,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message || 'Failed to log out',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signInWithGoogle = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -224,6 +239,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       throw error;
     }
+    // Don't set isLoading to false here as we're redirecting to Google
   };
 
   return (
