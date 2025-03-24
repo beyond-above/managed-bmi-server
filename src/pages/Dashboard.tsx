@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import DashboardContent from '@/components/dashboard/Dashboard';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context';
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading } = useAuth();

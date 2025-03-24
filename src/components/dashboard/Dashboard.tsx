@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Progress } from '@/components/ui/progress';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context';
 import BmiCalculator from '@/components/calculator/BmiCalculator';
 import { BarChart, History, Users } from 'lucide-react';
 

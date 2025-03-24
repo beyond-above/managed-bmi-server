@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -29,7 +28,6 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
@@ -57,7 +55,6 @@ const Navbar = () => {
           BMI Manager
         </Link>
         
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
           <Link 
             to="/" 
@@ -127,7 +124,6 @@ const Navbar = () => {
           )}
         </nav>
         
-        {/* Mobile Menu Button */}
         <button 
           className="md:hidden flex items-center p-2 rounded-md text-foreground/80 hover:text-primary focus:outline-none"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -137,7 +133,6 @@ const Navbar = () => {
         </button>
       </div>
       
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden glass-dark border-t mt-2 animate-fade-in">
           <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">

@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context';
 import { User, Key, CreditCard, Bell, ShieldCheck } from 'lucide-react';
 
 const Account = () => {
