@@ -82,6 +82,10 @@ export const authService = {
   // Register a new user
   async register(email: string, password: string, name: string): Promise<User | null> {
     try {
+      email = email.trim().toLowerCase();
+      
+      console.log("Registering with email:", email);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,9 +25,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const [formLoading, setFormLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
   
+  // Helper function to validate email format
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Validate email format before submitting
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
     setFormLoading(true);
     
     try {
@@ -34,7 +48,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         await login(email, password);
         navigate('/dashboard');
       } else {
-        await register(name, email, password);
+        await register(email, password, name);
         navigate('/dashboard');
       }
     } catch (err) {

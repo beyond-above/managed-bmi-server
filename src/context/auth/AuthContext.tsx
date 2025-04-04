@@ -11,7 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User | null>;
-  register: (email: string, password: string, name: string) => Promise<User | null>;
+  register: (name: string, email: string, password: string) => Promise<User | null>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -97,13 +97,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Auth methods
   const login = async (email: string, password: string) => {
-    const user = await authService.login(email, password);
-    return user;
+    return await authService.login(email, password);
   };
 
-  const register = async (email: string, password: string, name: string) => {
-    const user = await authService.register(email, password, name);
-    return user;
+  const register = async (name: string, email: string, password: string) => {
+    return await authService.register(email, password, name);
   };
 
   const signInWithGoogle = async () => {

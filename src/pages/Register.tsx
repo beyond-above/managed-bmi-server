@@ -1,12 +1,23 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import AuthForm from '@/components/auth/AuthForm';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/context/auth';
 
 const Register = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
