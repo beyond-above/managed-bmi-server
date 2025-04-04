@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -37,52 +36,42 @@ serve(async (req) => {
       .eq("id", user.id)
       .single();
 
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
-
-    // Check Stripe subscription status if premium
+    // If the user has a premium plan, verify if their subscription is active
     if (profile?.plan === "premium") {
-      // Look for active subscriptions in payments table
+      // Look for active payment records in payments table
       const { data: payments } = await supabaseClient
         .from("payments")
         .select("*")
         .eq("user_id", user.id)
-        .eq("status", "active")
+        .eq("status", "paid")
         .order("created_at", { ascending: false })
         .limit(1);
 
       const payment = payments?.[0];
 
-      if (payment?.stripe_subscription_id) {
-        const subscription = await stripe.subscriptions.retrieve(
-          payment.stripe_subscription_id
-        );
-        
-        // If subscription is no longer active, update profile
-        if (subscription.status !== "active" && subscription.status !== "trialing") {
-          await supabaseClient
-            .from("profiles")
-            .update({ plan: "free" })
-            .eq("id", user.id);
+      // Check if there's an active payment and it hasn't expired
+      if (!payment || (payment.valid_until && new Date(payment.valid_until) < new Date())) {
+        // If no valid payment found, downgrade to free
+        await supabaseClient
+          .from("profiles")
+          .update({ plan: "free" })
+          .eq("id", user.id);
             
-          return new Response(
-            JSON.stringify({ 
-              plan: "free",
-              subscription: null,
-              apiRequests: { used: 0, limit: 100 }
-            }),
-            {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 200,
-            }
-          );
-        }
+        return new Response(
+          JSON.stringify({ 
+            plan: "free",
+            subscription: null,
+            apiRequests: { used: 0, limit: 100 }
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          }
+        );
       }
     }
 
-    // Count API requests
+    // Count API requests for current month
     const { count } = await supabaseClient
       .from("api_requests")
       .select("*", { count: "exact", head: true })

@@ -14,6 +14,7 @@ import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import AuthCallback from "./pages/AuthCallback";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Checkout from "./pages/Checkout";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/checkout" element={<Checkout />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

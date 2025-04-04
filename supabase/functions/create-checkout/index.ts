@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -36,7 +35,7 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    // Skip Stripe for free plan
+    // Skip Razorpay for free plan
     if (plan === "free") {
       await supabaseClient
         .from("profiles")
@@ -55,71 +54,71 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
-
-    // Check if an existing stripe customer exists
+    // Get user profile for additional information
     const { data: profiles } = await supabaseClient
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
 
-    // Get or create Stripe customer
     const customerEmail = user.email;
     const customerName = profiles?.name || user.email;
     
-    const customers = await stripe.customers.list({ 
-      email: customerEmail,
-      limit: 1 
-    });
+    // Initialize Razorpay order
+    const RAZORPAY_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID") || "";
+    const RAZORPAY_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET") || "";
     
-    let customerId;
+    const basicAuth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
     
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    } else {
-      const newCustomer = await stripe.customers.create({
-        email: customerEmail,
-        name: customerName,
-        metadata: {
-          userId: user.id
+    // Create an order in Razorpay
+    const response = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Basic ${basicAuth}`
+      },
+      body: JSON.stringify({
+        amount: 1200 * 100, // Amount in paisa (Rs. 1200)
+        currency: "INR",
+        receipt: `receipt_order_${Date.now()}`,
+        notes: {
+          userId: user.id,
+          plan: "premium"
         }
-      });
-      customerId = newCustomer.id;
-    }
-
-    // Create a checkout session
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Premium Subscription",
-              description: "Access to all premium features",
-            },
-            unit_amount: 1200, // $12.00
-            recurring: {
-              interval: "month",
-            },
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/pricing`,
+      })
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Razorpay API error: ${errorData.error?.description || 'Unknown error'}`);
+    }
+    
+    const orderData = await response.json();
+    
+    // Record the payment intent in our database
+    await supabaseClient
+      .from("payments")
+      .insert({
+        user_id: user.id,
+        amount: 1200,
+        currency: "INR",
+        status: "created",
+        plan: "premium",
+        stripe_payment_id: orderData.id // Using this field to store Razorpay order ID
+      });
+
+    // Return the checkout URL
     return new Response(
       JSON.stringify({ 
-        sessionId: session.id,
-        url: session.url
+        orderId: orderData.id,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        keyId: RAZORPAY_KEY_ID,
+        prefill: {
+          name: customerName,
+          email: customerEmail
+        },
+        url: `${req.headers.get("origin")}/checkout?order_id=${orderData.id}`
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

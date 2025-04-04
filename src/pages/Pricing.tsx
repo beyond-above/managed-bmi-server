@@ -81,17 +81,26 @@ const Pricing = () => {
       
       if (error) throw new Error(error);
       
-      if (url) {
-        // For premium plan, redirect to Stripe checkout
-        window.location.href = url;
-      } else if (plan === 'free') {
+      if (plan === 'free') {
         // For free plan, show success message and reload page
         toast({
           title: "Plan Updated",
           description: "You have been downgraded to the free plan",
         });
         window.location.reload();
+        return;
       }
+      
+      if (!url) {
+        throw new Error("Failed to create checkout session");
+      }
+      
+      // For Razorpay, we need to store the order data in history state
+      // and navigate to the checkout page
+      const orderData = url;
+      navigate('/checkout?order_id=' + orderData.orderId, {
+        state: { orderData }
+      });
     } catch (error) {
       toast({
         title: "Error",

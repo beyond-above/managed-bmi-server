@@ -30,7 +30,7 @@ export const paymentService = {
   },
   
   /**
-   * Check subscription status from Stripe
+   * Check subscription status from Razorpay
    */
   async checkSubscription() {
     try {
