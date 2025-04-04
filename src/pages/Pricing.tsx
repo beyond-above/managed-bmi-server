@@ -95,12 +95,17 @@ const Pricing = () => {
         throw new Error("Failed to create checkout session");
       }
       
-      // For Razorpay, we need to store the order data in history state
-      // and navigate to the checkout page
-      const orderData = url;
-      navigate('/checkout?order_id=' + orderData.orderId, {
-        state: { orderData }
-      });
+      // For Razorpay, we need to handle the response differently
+      // url now contains the order data object, not a string URL
+      if (typeof url === 'object') {
+        // Navigate to checkout page with order data
+        navigate('/checkout', {
+          state: { orderData: url }
+        });
+      } else {
+        // Handle case where URL might be a string (fallback or other payment provider)
+        window.location.href = url;
+      }
     } catch (error) {
       toast({
         title: "Error",

@@ -4,11 +4,24 @@ import { toast } from '@/hooks/use-toast';
 
 export type Plan = 'free' | 'premium';
 
+// Define the Razorpay order response type
+export type RazorpayOrderData = {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  prefill: {
+    name: string;
+    email: string;
+  };
+  url?: string;
+};
+
 export const paymentService = {
   /**
    * Create a checkout session for the specified plan
    */
-  async createCheckout(plan: Plan): Promise<{ url: string | null; error: string | null }> {
+  async createCheckout(plan: Plan): Promise<{ url: RazorpayOrderData | string | null; error: string | null }> {
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { plan },
@@ -18,7 +31,7 @@ export const paymentService = {
         throw new Error(error.message);
       }
 
-      return { url: data.url, error: null };
+      return { url: data, error: null };
     } catch (error) {
       toast({
         title: "Payment Error",

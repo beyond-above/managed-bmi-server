@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -9,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context';
 import { toast } from '@/hooks/use-toast';
 import { Script } from '@/components/ui/script';
+import { RazorpayOrderData } from '@/services/payment-service';
 
 // Add Razorpay typings
 declare global {
@@ -22,10 +22,7 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [orderData, setOrderData] = useState<any>(null);
-
-  const queryParams = new URLSearchParams(location.search);
-  const orderId = queryParams.get('order_id');
+  const [orderData, setOrderData] = useState<RazorpayOrderData | null>(null);
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -34,14 +31,9 @@ const Checkout = () => {
       return;
     }
 
-    // Redirect if no order ID
-    if (!orderId) {
-      navigate('/pricing');
-      return;
-    }
-
-    // Fetch order data from URL params or stored state
-    const data = window.history.state?.orderData;
+    // Get order data from state
+    const state = location.state as { orderData?: RazorpayOrderData };
+    const data = state?.orderData;
     
     if (data) {
       setOrderData(data);
@@ -49,7 +41,7 @@ const Checkout = () => {
     } else {
       navigate('/pricing');
     }
-  }, [isAuthenticated, navigate, orderId]);
+  }, [isAuthenticated, navigate, location.state]);
 
   const handlePayment = () => {
     if (!orderData || !window.Razorpay) {
