@@ -1,118 +1,117 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
-import { AuthContextType, UserProfile } from './types';
-import { authService, fetchProfile } from './auth-service';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { authService } from './auth-service';
+import { UserProfile } from './types';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextType {
+  user: User | null;
+  profile: UserProfile | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<User | null>;
+  register: (email: string, password: string, name: string) => Promise<User | null>;
+  signInWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+const defaultContext: AuthContextType = {
+  user: null,
+  profile: null,
+  isAuthenticated: false,
+  isLoading: true,
+  login: async () => null,
+  register: async () => null,
+  signInWithGoogle: async () => {},
+  logout: async () => {},
+  refreshProfile: async () => {},
 };
+
+const AuthContext = createContext<AuthContextType>(defaultContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const refreshProfile = async () => {
-    if (user) {
-      const profileData = await fetchProfile(user.id);
-      if (profileData) {
-        setProfile(profileData);
-      }
+  
+  const fetchProfile = useCallback(async (userId: string) => {
+    const profileData = await authService.fetchProfile(userId);
+    if (profileData) {
+      setProfile(profileData);
     }
-  };
+  }, []);
+  
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  }, [user, fetchProfile]);
+
+  const handleAuthStateChange = useCallback(async (event: string, session: any) => {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      setIsLoading(true);
+      setUser(session.user);
+      await fetchProfile(session.user.id);
+      setIsLoading(false);
+    } else if (event === 'SIGNED_OUT') {
+      setUser(null);
+      setProfile(null);
+      setIsLoading(false);
+    }
+  }, [fetchProfile]);
 
   // Initialize auth state
   useEffect(() => {
     const initializeAuth = async () => {
       setIsLoading(true);
       
-      // Set up auth state listener first
-      const { data: { subscription } } = authService.onAuthStateChange(
-        async (user, session) => {
-          setSession(session);
-          setUser(user);
-          
-          if (user) {
-            const profileData = await fetchProfile(user.id);
-            setProfile(profileData);
-          } else {
-            setProfile(null);
-          }
-          
-          setIsLoading(false);
+      try {
+        // Check for existing session
+        const session = await authService.getSession();
+        
+        if (session) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
         }
-      );
-
-      // Then check for existing session
-      const { data } = await authService.getCurrentSession();
-      const existingSession = data.session;
-      
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-      
-      if (existingSession?.user) {
-        const profileData = await fetchProfile(existingSession.user.id);
-        setProfile(profileData);
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
-      
-      return () => subscription.unsubscribe();
     };
-    
+
     initializeAuth();
-  }, []);
+    
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+    
+    // Clean up subscription
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
+  }, [handleAuthStateChange, fetchProfile]);
 
+  // Auth methods
   const login = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      await authService.login(email, password);
-    } catch (error: any) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    const user = await authService.login(email, password);
+    return user;
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      await authService.register(name, email, password);
-    } catch (error: any) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      setIsLoading(true);
-      await authService.logout();
-    } catch (error: any) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+  const register = async (email: string, password: string, name: string) => {
+    const user = await authService.register(email, password, name);
+    return user;
   };
 
   const signInWithGoogle = async () => {
-    try {
-      setIsLoading(true);
-      await authService.signInWithGoogle();
-    } catch (error: any) {
-      setIsLoading(false);
-      throw error;
-    }
-    // Don't set isLoading to false here as we're redirecting to Google
+    await authService.signInWithGoogle();
+  };
+
+  const logout = async () => {
+    await authService.logout();
   };
 
   return (
@@ -124,8 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         register,
-        logout,
         signInWithGoogle,
+        logout,
         refreshProfile,
       }}
     >
@@ -133,3 +132,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

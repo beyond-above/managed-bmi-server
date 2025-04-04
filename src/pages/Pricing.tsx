@@ -1,15 +1,20 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context';
+import { paymentService } from '@/services/payment-service';
+import type { Plan } from '@/services/payment-service';
+import { toast } from '@/hooks/use-toast';
 
 const Pricing = () => {
   const navigate = useNavigate();
   const { isAuthenticated, profile } = useAuth();
+  const [loading, setLoading] = useState<string | null>(null);
   
   const plans = [
     {
@@ -31,7 +36,8 @@ const Pricing = () => {
       ],
       cta: isAuthenticated && profile?.plan === 'free' ? 'Current Plan' : 'Get Started',
       ctaVariant: isAuthenticated && profile?.plan === 'free' ? 'outline' : 'default',
-      popular: false
+      popular: false,
+      planId: 'free' as Plan
     },
     {
       name: 'Premium',
@@ -51,16 +57,49 @@ const Pricing = () => {
       limitations: [],
       cta: isAuthenticated && profile?.plan === 'premium' ? 'Current Plan' : 'Upgrade Now',
       ctaVariant: isAuthenticated && profile?.plan === 'premium' ? 'outline' : 'default',
-      popular: true
+      popular: true,
+      planId: 'premium' as Plan
     }
   ];
   
-  const handlePlanSelection = (plan: string) => {
+  const handlePlanSelection = async (plan: Plan) => {
+    // If not logged in, redirect to register
     if (!isAuthenticated) {
       navigate('/register');
-    } else if (plan === 'Premium' && profile?.plan === 'free') {
-      // Handle upgrade
-      console.log('Upgrade to premium');
+      return;
+    }
+    
+    // If selecting current plan, do nothing
+    if (profile?.plan === plan) {
+      return;
+    }
+    
+    setLoading(plan);
+    
+    try {
+      const { url, error } = await paymentService.createCheckout(plan);
+      
+      if (error) throw new Error(error);
+      
+      if (url) {
+        // For premium plan, redirect to Stripe checkout
+        window.location.href = url;
+      } else if (plan === 'free') {
+        // For free plan, show success message and reload page
+        toast({
+          title: "Plan Updated",
+          description: "You have been downgraded to the free plan",
+        });
+        window.location.reload();
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process your request",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
     }
   };
   
@@ -128,10 +167,15 @@ const Pricing = () => {
                   <Button 
                     className="w-full" 
                     variant={plan.ctaVariant as any}
-                    onClick={() => handlePlanSelection(plan.name)}
-                    disabled={isAuthenticated && profile?.plan === plan.name.toLowerCase()}
+                    onClick={() => handlePlanSelection(plan.planId)}
+                    disabled={isAuthenticated && profile?.plan === plan.planId || loading !== null}
                   >
-                    {plan.cta}
+                    {loading === plan.planId ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : plan.cta}
                   </Button>
                 </div>
               </Card>

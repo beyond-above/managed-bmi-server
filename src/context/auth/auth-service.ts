@@ -3,123 +3,160 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { UserProfile } from './types';
+import { paymentService } from '@/services/payment-service';
 
-// Fetch user profile data from Supabase
-export const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+// Helper to handle API errors
+const handleError = (error: any) => {
+  const message = error.message || 'An error occurred';
+  toast({
+    title: 'Error',
+    description: message,
+    variant: 'destructive',
+  });
+  return message;
+};
 
-    if (error) {
+// Helper to extract username from email
+const getUsernameFromEmail = (email: string): string => {
+  return email.split('@')[0];
+};
+
+export const authService = {
+  // Fetch profile data from Supabase
+  async fetchProfile(userId: string): Promise<UserProfile | null> {
+    try {
+      // First check subscription status with Stripe
+      const { data: subscriptionData, error: subscriptionError } = await paymentService.checkSubscription();
+      
+      if (subscriptionError) {
+        console.error("Failed to check subscription:", subscriptionError);
+      }
+
+      // Then fetch profile data from database
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+      
+      // If we have subscription data, use that for the plan and API requests
+      const apiRequests = subscriptionData?.apiRequests || { used: 0, limit: 100 };
+      const plan = subscriptionData?.plan || data.plan || 'free';
+      
+      return {
+        id: data.id,
+        name: data.name || '',
+        email: data.email || '',
+        plan: plan,
+        apiRequests: apiRequests
+      };
+    } catch (error) {
       console.error('Error fetching profile:', error);
       return null;
     }
+  },
 
-    // Get API usage count
-    const { data: apiData, error: apiError } = await supabase
-      .from('api_requests')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+  // Login user with email and password
+  async login(email: string, password: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (apiError) {
-      console.error('Error fetching API usage:', apiError);
-    }
-
-    // Set limits based on plan
-    const apiLimit = data.plan === 'premium' ? 25 : 10;
-    
-    // Make sure we cast plan to the correct type
-    const userPlan = (data.plan === 'premium' ? 'premium' : 'free') as 'free' | 'premium';
-
-    return {
-      id: data.id,
-      email: data.email,
-      name: data.name,
-      plan: userPlan,
-      apiRequests: {
-        limit: apiLimit,
-        used: apiData?.length || 0
+      if (error) {
+        throw error;
       }
-    };
-  } catch (error) {
-    console.error('Error in fetchProfile:', error);
-    return null;
-  }
-};
 
-// Authentication operations
-export const authService = {
-  login: async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-    
-    toast({
-      title: 'Success',
-      description: 'Logged in successfully!',
-    });
-
-    return data;
+      return data.user;
+    } catch (error) {
+      handleError(error);
+      return null;
+    }
   },
 
-  register: async (name: string, email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
+  // Register a new user
+  async register(email: string, password: string, name: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
         },
-      },
-    });
+      });
 
-    if (error) throw error;
-    
-    toast({
-      title: 'Account created',
-      description: 'Your account has been created successfully!',
-    });
+      if (error) {
+        throw error;
+      }
 
-    return data;
+      // Create profile if not created by trigger
+      if (data.user) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          name: name || getUsernameFromEmail(email),
+          email: email,
+          plan: 'free', 
+        });
+      }
+
+      return data.user;
+    } catch (error) {
+      handleError(error);
+      return null;
+    }
   },
 
-  logout: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    toast({
-      title: 'Logged out',
-      description: 'You have been logged out successfully.',
-    });
+  // Sign in with Google OAuth
+  async signInWithGoogle(): Promise<void> {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      handleError(error);
+    }
   },
 
-  signInWithGoogle: async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    if (error) throw error;
-    return data;
+  // Log out the current user
+  async logout(): Promise<void> {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      handleError(error);
+    }
   },
 
-  getCurrentSession: async () => {
-    return await supabase.auth.getSession();
-  },
-
-  onAuthStateChange: (callback: (user: User | null, session: Session | null) => void) => {
-    return supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, !!session);
-      callback(session?.user ?? null, session);
-    });
+  // Get the current session
+  async getSession(): Promise<Session | null> {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data.session;
+    } catch (error) {
+      console.error('Error getting session:', error);
+      return null;
+    }
   }
 };
